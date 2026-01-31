@@ -327,6 +327,10 @@ uintptr_t Fast3dWindow::GetGfxFrameBuffer() {
     return mInterpreter->mGfxFrameBuffer;
 }
 
+uintptr_t Fast3dWindow::GetFramebufferTextureId(int fb) {
+    return mInterpreter->GetFramebufferTextureId(fb);
+}
+
 const char* Fast3dWindow::GetKeyName(int32_t scancode) {
     return mWindowManagerApi->GetKeyName(scancode);
 }

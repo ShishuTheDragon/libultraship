@@ -4445,6 +4445,13 @@ int Interpreter::CreateFrameBuffer(uint32_t width, uint32_t height, uint32_t nat
     return fb;
 }
 
+uintptr_t Interpreter::GetFramebufferTextureId(int fb) {
+    if (fb < 0) {
+        return 0;
+    }
+    return (uintptr_t)mRapi->GetFramebufferTextureId(fb);
+}
+
 void Interpreter::SetFrameBuffer(int fb, float noiseScale) {
     mRapi->StartDrawToFramebuffer(fb, noiseScale);
     mRapi->ClearFramebuffer(false, true);
