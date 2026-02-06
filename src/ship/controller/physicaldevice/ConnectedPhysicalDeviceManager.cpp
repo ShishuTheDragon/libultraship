@@ -100,9 +100,14 @@ void ConnectedPhysicalDeviceManager::RefreshConnectedSDLGamepads() {
         mConnectedSDLGamepads[instanceId] = gamepad;
         mConnectedSDLGamepadNames[instanceId] = gamepadName;
 
-        for (uint8_t port = 1; port < 4; port++) {
-            mIgnoredInstanceIds[port].insert(instanceId);
-        }
+        // For my testing: always put controller on Ivan
+        mIgnoredInstanceIds[0].insert(instanceId);
+        mIgnoredInstanceIds[2].insert(instanceId);
+        mIgnoredInstanceIds[3].insert(instanceId);
+
+        // for (uint8_t port = 1; port < 4; port++) {
+        //     mIgnoredInstanceIds[port].insert(instanceId);
+        // }
     }
 }
 } // namespace Ship
