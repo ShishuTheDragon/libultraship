@@ -353,8 +353,25 @@ void GfxWindowBackendSDL2::Init(const char* gameName, const char* gfxApiName, bo
     }
 #endif
 
+#ifdef __OpenBSD__
+    int sysctlname[2] = { CTL_KERN, KERN_CLOCKRATE };
+    struct clockinfo clockinfo;
+    size_t clockinfo_size = sizeof(struct clockinfo);
+    if (sysctl(sysctlname, 2, &clockinfo, &clockinfo_size, NULL, 0) != -1) {
+        mBsdTick = clockinfo.tick;
+    }
+#endif
+
+    const char* emulation = "";
+#if defined(__APPLE__)
+    if (isRunningUnderRosetta()) {
+        SPDLOG_WARN("Process is running under Rosetta");
+        emulation = ", Rosetta";
+    }
+#endif
+
     char title[512];
-    int len = snprintf(title, sizeof(title), "%s (%s)", gameName, gfxApiName);
+    int len = snprintf(title, sizeof(title), "%s (%s%s)", gameName, gfxApiName, emulation);
 
 #ifdef __IOS__
     Uint32 flags = SDL_WINDOW_BORDERLESS | SDL_WINDOW_SHOWN;
