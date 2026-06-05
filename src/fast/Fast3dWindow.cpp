@@ -198,10 +198,12 @@ bool Fast3dWindow::DrawAndRunGraphicsCommands(Gfx* commands, const std::unordere
     auto gui = wnd->GetGui();
     // Setup mouse state manager
     wnd->GetMouseStateManager()->StartFrame();
+    // Resize game framebuffers before ImGui records draw commands so that
+    // any framebuffer texture IDs captured by ImGui::Image are already valid
+    // for the current frame dimensions (avoids use-after-free on resize).
+    mInterpreter->StartFrame();
     // Setup of the backend frames and draw initial Window and GUI menus
     gui->StartDraw();
-    // Setup game framebuffers to match available window space
-    mInterpreter->StartFrame();
     // Execute the games gfx commands
     mInterpreter->Run(commands, mtxReplacements);
     // Renders the game frame buffer to the final window and finishes the GUI
@@ -332,6 +334,10 @@ bool Fast3dWindow::IsRunning() {
 
 uintptr_t Fast3dWindow::GetGfxFrameBuffer() {
     return mInterpreter->mGfxFrameBuffer;
+}
+
+uintptr_t Fast3dWindow::GetFramebufferTextureId(int fb) {
+    return mInterpreter->GetFramebufferTextureId(fb);
 }
 
 const char* Fast3dWindow::GetKeyName(int32_t scancode) {
