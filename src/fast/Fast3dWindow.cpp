@@ -340,6 +340,11 @@ uintptr_t Fast3dWindow::GetFramebufferTextureId(int fb) {
     return mInterpreter->GetFramebufferTextureId(fb);
 }
 
+void Fast3dWindow::UpdateFramebufferSize(int fb, uint32_t origW, uint32_t origH,
+                                          uint32_t appliedW, uint32_t appliedH) {
+    mInterpreter->UpdateFrameBufferSize(fb, origW, origH, appliedW, appliedH);
+}
+
 const char* Fast3dWindow::GetKeyName(int32_t scancode) {
     return mWindowManagerApi->GetKeyName(scancode);
 }

@@ -4515,6 +4515,20 @@ int Interpreter::CreateFrameBuffer(uint32_t width, uint32_t height, uint32_t nat
     return fb;
 }
 
+void Interpreter::UpdateFrameBufferSize(int fb, uint32_t origW, uint32_t origH,
+                                         uint32_t appliedW, uint32_t appliedH) {
+    auto it = mFrameBuffers.find(fb);
+    if (it == mFrameBuffers.end()) return;
+    it->second.resize = false;
+    it->second.orig_width = origW;
+    it->second.orig_height = origH;
+    if (it->second.applied_width != appliedW || it->second.applied_height != appliedH) {
+        mRapi->UpdateFramebufferParameters(fb, appliedW, appliedH, 1, true, true, true, true);
+        it->second.applied_width = appliedW;
+        it->second.applied_height = appliedH;
+    }
+}
+
 uintptr_t Interpreter::GetFramebufferTextureId(int fb) {
     if (fb < 0) {
         return 0;
