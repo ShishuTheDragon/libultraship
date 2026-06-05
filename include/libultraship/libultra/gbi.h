@@ -2751,6 +2751,15 @@ typedef union Gfx {
         _g->words.w1 = fb;                      \
     }
 
+// Like gsSPSetFB but does not clear the depth buffer (use when re-binding a framebuffer for XLU pass)
+#define gsSPSetFBNoClearDepth(pkt, fb)          \
+    {                                           \
+        Gfx* _g = (Gfx*)(pkt);                  \
+                                                \
+        _g->words.w0 = _SHIFTL(G_SETFB, 24, 8) | 1; \
+        _g->words.w1 = fb;                      \
+    }
+
 #define gsSPResetFB(pkt)                          \
     {                                             \
         Gfx* _g = (Gfx*)(pkt);                    \

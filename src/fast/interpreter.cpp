@@ -3532,10 +3532,11 @@ bool gfx_set_timg_otr_filepath_handler_custom(F3DGfx** cmd0) {
 bool gfx_set_fb_handler_custom(F3DGfx** cmd0) {
     F3DGfx* cmd = *cmd0;
     Interpreter* gfx = mInstance.lock().get();
+    bool clearDepth = !(cmd->words.w0 & 1);
     gfx->Flush();
 
     if (cmd->words.w1) {
-        gfx->SetFrameBuffer((int32_t)cmd->words.w1, 1.0f);
+        gfx->SetFrameBuffer((int32_t)cmd->words.w1, 1.0f, clearDepth);
         gfx->mActiveFrameBuffer = gfx->mFrameBuffers.find((int32_t)cmd->words.w1);
         gfx->mFbActive = true;
     } else {
@@ -4521,9 +4522,11 @@ uintptr_t Interpreter::GetFramebufferTextureId(int fb) {
     return (uintptr_t)mRapi->GetFramebufferTextureId(fb);
 }
 
-void Interpreter::SetFrameBuffer(int fb, float noiseScale) {
+void Interpreter::SetFrameBuffer(int fb, float noiseScale, bool clearDepth) {
     mRapi->StartDrawToFramebuffer(fb, noiseScale);
-    mRapi->ClearFramebuffer(false, true);
+    if (clearDepth) {
+        mRapi->ClearFramebuffer(false, true);
+    }
 }
 
 void Interpreter::CopyFrameBuffer(int fb_dst_id, int fb_src_id, bool copyOnce, bool* hasCopiedPtr) {
