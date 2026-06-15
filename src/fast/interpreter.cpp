@@ -1453,15 +1453,39 @@ void Interpreter::GfxSpPopMatrix(uint32_t count) {
     mRsp->lights_changed = true;
 }
 
+float Interpreter::GetRenderScaleFactor() const {
+    if ((float)mCurDimensions.width / (float)mCurDimensions.height < 4.0f / 3.0f) {
+        return (float)mCurDimensions.width / (float)mNativeDimensions.width;
+    }
+    return (float)mCurDimensions.height / (float)mNativeDimensions.height;
+}
+
 float Interpreter::AdjXForAspectRatio(float x) const {
-    // Skip widescreen adjustment for fixed-size off-screen FBs (HUD elements,
+    // Skip aspect ratio adjustment for fixed-size off-screen FBs (HUD elements,
     // small capture buffers), or those which specify a fixed aspect ratio.
     if (mFbActive && mActiveFrameBuffer != mFrameBuffers.end() &&
         (!mActiveFrameBuffer->second.resize || mActiveFrameBuffer->second.forceFixedAspect)) {
         return x;
-    } else {
-        return x * (4.0f / 3.0f) / ((float)mCurDimensions.width / (float)mCurDimensions.height);
     }
+    float aspect = (float)mCurDimensions.width / (float)mCurDimensions.height;
+    if (aspect >= 4.0f / 3.0f) {
+        // Widescreen: contract X in clip space so the world extends left/right.
+        return x * (4.0f / 3.0f) / aspect;
+    }
+    return x; // Tallscreen: no horizontal adjustment; view extends vertically instead.
+}
+
+float Interpreter::AdjYForAspectRatio(float y) const {
+    if (mFbActive && mActiveFrameBuffer != mFrameBuffers.end() &&
+        (!mActiveFrameBuffer->second.resize || mActiveFrameBuffer->second.forceFixedAspect)) {
+        return y;
+    }
+    float aspect = (float)mCurDimensions.width / (float)mCurDimensions.height;
+    if (aspect < 4.0f / 3.0f) {
+        // Tallscreen: contract Y in clip space so the world extends up/down.
+        return y * (3.0f / 4.0f) * aspect;
+    }
+    return y; // Widescreen: no vertical adjustment; view extends horizontally instead.
 }
 
 // Scale the width and height value based on the ratio of the viewport to the native size
@@ -1506,6 +1530,7 @@ void Interpreter::GfxSpVertex(size_t n_vertices, size_t dest_index, const F3DVtx
         }
 
         x = AdjXForAspectRatio(x);
+        y = AdjYForAspectRatio(y);
 
         short U = v->tc[0] * mRsp->texture_scaling_factor.s >> 16;
         short V = v->tc[1] * mRsp->texture_scaling_factor.t >> 16;
@@ -2714,6 +2739,8 @@ void Interpreter::GfxDrawRectangle(int32_t ulx, int32_t uly, int32_t lrx, int32_
 
     ulxf = AdjXForAspectRatio(ulxf);
     lrxf = AdjXForAspectRatio(lrxf);
+    ulyf = AdjYForAspectRatio(ulyf);
+    lryf = AdjYForAspectRatio(lryf);
 
     struct LoadedVertex* ul = &mRsp->loaded_vertices[MAX_VERTICES + 0];
     struct LoadedVertex* ll = &mRsp->loaded_vertices[MAX_VERTICES + 1];
@@ -4014,8 +4041,7 @@ bool gfx_reset_fb_handler_custom(F3DGfx** cmd0) {
     gfx->Flush();
     gfx->mFbActive = false;
     gfx->mActiveFrameBuffer = gfx->mFrameBuffers.end();
-    gfx->mRapi->StartDrawToFramebuffer(gfx->mRendersToFb ? gfx->mGameFb : 0,
-                                       (float)gfx->mCurDimensions.height / gfx->mNativeDimensions.height);
+    gfx->mRapi->StartDrawToFramebuffer(gfx->mRendersToFb ? gfx->mGameFb : 0, gfx->GetRenderScaleFactor());
     // Force viewport and scissor to reapply against the main framebuffer, in case a previous smaller
     // framebuffer truncated the values
     gfx->mRdp->viewport_or_scissor_changed = true;
@@ -4946,7 +4972,7 @@ void Interpreter::RunGuiOnly() {
     mRapi->UpdateFramebufferParameters(0, mGfxCurrentWindowDimensions.width, mGfxCurrentWindowDimensions.height, 1,
                                        false, true, true, !mRendersToFb);
     mRapi->StartFrame();
-    mRapi->StartDrawToFramebuffer(mRendersToFb ? mGameFb : 0, (float)mCurDimensions.height / mNativeDimensions.height);
+    mRapi->StartDrawToFramebuffer(mRendersToFb ? mGameFb : 0, GetRenderScaleFactor());
     mRapi->ClearFramebuffer(true, true);
     mRdp->viewport_or_scissor_changed = true;
     mRenderingState.viewport = {};
@@ -4988,7 +5014,7 @@ void Interpreter::Run(Gfx* commands, const std::unordered_map<Mtx*, MtxF>& mtx_r
     mRapi->UpdateFramebufferParameters(0, mGfxCurrentWindowDimensions.width, mGfxCurrentWindowDimensions.height, 1,
                                        false, true, true, !mRendersToFb);
     mRapi->StartFrame();
-    mRapi->StartDrawToFramebuffer(mRendersToFb ? mGameFb : 0, (float)mCurDimensions.height / mNativeDimensions.height);
+    mRapi->StartDrawToFramebuffer(mRendersToFb ? mGameFb : 0, GetRenderScaleFactor());
     mRapi->ClearFramebuffer(true, true);
     mRdp->viewport_or_scissor_changed = true;
     mRenderingState.viewport = {};
@@ -5129,7 +5155,7 @@ void Interpreter::CopyFrameBuffer(int fb_dst_id, int fb_src_id, bool copyOnce, b
 }
 
 void Interpreter::ResetFrameBuffer() {
-    mRapi->StartDrawToFramebuffer(0, (float)mCurDimensions.height / mNativeDimensions.height);
+    mRapi->StartDrawToFramebuffer(0, GetRenderScaleFactor());
 }
 
 void Interpreter::AdjustPixelDepthCoordinates(float& x, float& y) {

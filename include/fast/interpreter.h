@@ -482,6 +482,8 @@ class Interpreter {
     void AdjustWidthHeightForScale(uint32_t& width, uint32_t& height, uint32_t nativeWidth,
                                    uint32_t nativeHeight) const;
     float AdjXForAspectRatio(float x) const;
+    float AdjYForAspectRatio(float y) const;
+    float GetRenderScaleFactor() const;
     void AdjustVIewportOrScissor(XYWidthHeight* area);
     void CalcAndSetViewport(const F3DVp_t* viewport);
 
